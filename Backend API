@@ -1,0 +1,14 @@
+from fastapi import FastAPI
+
+app = FastAPI()
+
+@app.get("/menu")
+def get_menu():
+    return [
+        {"id": 1, "name": "Cà phê muối", "price": 30000},
+        {"id": 2, "name": "Trà đào cam sả", "price": 35000}
+    ]
+
+@app.get("/")
+def root():
+    return {"message": "Mini S2O API is running!"}
