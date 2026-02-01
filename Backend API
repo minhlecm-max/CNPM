@@ -12,3 +12,4 @@ def get_menu():
 @app.get("/")
 def root():
     return {"message": "Mini S2O API is running!"}
+ 
