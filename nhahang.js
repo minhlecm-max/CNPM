@@ -1,100 +1,61 @@
-﻿const list = document.getElementById('order-list');
-
-/* =========================
-   LẤY ĐƠN TỪ LOCAL STORAGE
-   ========================= */
-let orders = JSON.parse(localStorage.getItem("orders")) || [];
-let currentFilter = 'all';
-
-/* =========================
-   HÀM LƯU DỮ LIỆU
-   ========================= */
-function saveOrders() {
-    localStorage.setItem("orders", JSON.stringify(orders));
+if (typeof API_URL === "undefined") {
+  alert("❌ API_URL chưa được load (thiếu config.js)");
+  throw new Error("API_URL missing");
 }
 
-/* =========================
-   HIỂN THỊ ĐƠN HÀNG
-   ========================= */
-function renderOrders() {
-    list.innerHTML = '';
+const ordersContainer = document.getElementById("orders");
+let currentFilter = "all";
 
-    orders
-        .filter(o => currentFilter === 'all' || o.status === currentFilter)
-        .forEach(order => {
-            const card = document.createElement('li');
-            card.className = 'order-card';
-            if (order.status === 'done') card.classList.add('completed');
-
-            card.innerHTML = `
-        <img src="${order.image || 'https://images.unsplash.com/photo-1551218808-94e220e084d2'}">
-        <div class="card-body">
-          <div class="food-name">${order.food}</div>
-          <div class="quantity">Số lượng: ${order.quantity}</div>
-          <span class="status ${order.status}">
-            ${order.status === 'new' ? 'MỚI' :
-                    order.status === 'doing' ? 'ĐANG LÀM' : 'HOÀN THÀNH'}
-          </span>
-
-          <div class="actions">
-            <button class="btn-doing">Đang làm</button>
-            <button class="btn-done">Xong</button>
-            <button class="btn-delete">Xóa</button>
-          </div>
-        </div>
-      `;
-
-            /* ===== SỰ KIỆN ===== */
-            card.querySelector('.btn-doing').onclick = () => {
-                order.status = 'doing';
-                saveOrders();
-                renderOrders();
-            };
-
-            card.querySelector('.btn-done').onclick = () => {
-                order.status = 'done';
-                saveOrders();
-                renderOrders();
-            };
-
-            card.querySelector('.btn-delete').onclick = () => {
-                orders = orders.filter(o => o.id !== order.id);
-                saveOrders();
-                renderOrders();
-            };
-
-            list.appendChild(card);
-        });
+async function fetchOrders() {
+  const res = await fetch(`${API_URL}/orders`);
+  const orders = await res.json();
+  renderOrders(orders);
 }
 
-/* =========================
-   LỌC TRẠNG THÁI
-   ========================= */
-function filterStatus(status) {
-    currentFilter = status;
-    renderOrders();
-}
+function renderOrders(orders) {
+  ordersContainer.innerHTML = "";
 
-/* =========================
-   TỰ ĐỘNG CẬP NHẬT
-   (KHI KHÁCH ĐẶT MÓN)
-   ========================= */
-let lastData = JSON.stringify(orders);
+  const list = currentFilter === "all"
+    ? orders
+    : orders.filter(o => o.status === currentFilter);
 
-setInterval(() => {
-  const newData = JSON.stringify(
-    JSON.parse(localStorage.getItem("orders")) || []
-  );
-
-  if (newData !== lastData) {
-    orders = JSON.parse(newData);
-    lastData = newData;
-    renderOrders();
+  if (list.length === 0) {
+    ordersContainer.innerHTML = "<p>Chưa có đơn</p>";
+    return;
   }
-}, 2000);
 
+  list.forEach(o => {
+    const items = (o.order_data || []).map(i =>
+      `<div>${i.food} x${i.quantity}</div>`
+    ).join("");
 
-/* =========================
-   CHẠY LẦN ĐẦU
-   ========================= */
-renderOrders();
+    ordersContainer.innerHTML += `
+      <div class="order-card">
+        <b>Bàn ${o.table_number}</b> (${o.status})<br>
+        ${items}
+        <br>
+        ${o.status === "new" ? `<button onclick="updateStatus(${o.id},'doing')">Nhận</button>` : ""}
+        ${o.status === "doing" ? `<button onclick="updateStatus(${o.id},'done')">Xong</button>` : ""}
+        <button onclick="deleteOrder(${o.id})">Xóa</button>
+      </div>
+    `;
+  });
+}
+
+async function updateStatus(id, status) {
+  await fetch(`${API_URL}/orders/${id}/${status}`, { method: "PUT" });
+  fetchOrders();
+}
+
+async function deleteOrder(id) {
+  await fetch(`${API_URL}/orders/${id}`, { method: "DELETE" });
+  fetchOrders();
+}
+
+function setFilter(f) {
+  currentFilter = f;
+  fetchOrders();
+}
+
+setInterval(fetchOrders, 2000);
+fetchOrders();
