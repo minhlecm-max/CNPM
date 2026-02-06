@@ -122,33 +122,33 @@ p.text-muted {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <script>
-        const qrContainer = document.getElementById('qrcode');
-        const tableInput = document.getElementById('table-input');
+    const qrContainer = document.getElementById('qrcode');
+    const tableInput = document.getElementById('table-input');
 
-        let qrCode = new QRCode(qrContainer, {
-            width: 200,
-            height: 200
-        });
+    let qrCode = new QRCode(qrContainer, {
+        width: 200,
+        height: 200
+    });
 
-        function updateQR(table) {
-            if (!table) return;
+    function updateQR(table) {
+        if (!table) return;
 
-            const basePath = location.pathname.replace(/\/[^\/]*$/, '');
-            const url = `${location.origin}${basePath}/menu.html?table=${table}`;
+        // ✅ LINK CHUẨN FASTAPI
+        const url = `${location.origin}/static/menu.html?table=${table}`;
 
-            qrCode.clear();
-            qrCode.makeCode(url);
-        }
+        qrCode.clear();
+        qrCode.makeCode(url);
+    }
 
+    tableInput.addEventListener('input', () => {
+        const table = tableInput.value.trim();
+        if (table) updateQR(table);
+    });
 
-        tableInput.addEventListener('input', () => {
-            const table = tableInput.value.trim();
-            if (table) updateQR(table);
-        });
+    tableInput.value = 1;
+    updateQR(1);
+</script>
 
-        tableInput.value = 1;
-        updateQR(1);
-    </script>
 
 </body>
 
